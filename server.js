@@ -87,8 +87,6 @@ serverHTTP.listen(portWeb, function () {
 
 // ---------- Receber os dados do cliente, armazenar no banco de dados e enviar pelo WebSocket ---------- 
 
-let lastData = new Date();
-
 // Emitted when new client connects 
 server.on('connection',function(socket){
 	//this property shows the number of characters currently buffered to be written. (Number of characters is approximately equal to the number of bytes to be written, but the buffer may contain strings, and the strings are lazily encoded, so the exact number of bytes is not known.)
