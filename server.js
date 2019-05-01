@@ -21,11 +21,11 @@ server.listen(serverPORT);
 const portWeb = process.env.PORT || 8080;
 
 // ---------- MONGO ---------- 
-mongoose.connect('mongodb://localhost/sensordata', { useNewUrlParser: true });
-
-var db = mongoose.connection;
-db.on('error', console.error.bind(console, 'connection error:'));
-db.once('open', async function() {});
+mongoose.connect('mongodb://localhost/sensordata', { useNewUrlParser: true }).then(() => {
+    console.log("MongoDB connected ...");
+}).catch((err)=> {
+    console.log("MongoDB connection error ..." + err);
+});
 
 var InfoSensor = new mongoose.Schema({
 	time: Date,
@@ -133,9 +133,17 @@ server.on('connection',function(socket){
         console.log('lastData value = ' + (new Date()).getTime());
         
         var data = JSON.parse(message.toString());
-		    
+		
+		var instance = new Database({
+			time: new Date(),
+			sensor: data.Sensor,
+			tmp: data.Tmp,
+			hum: data.Hum,
+			lum: data.Lum
+		});
+		
 	    const values = {
-		    time: (new Date()).getTime(),
+		    time: new Date(),
 		    sensor: data.Sensor,
 		    tmp: data.Tmp,
 		    hum: data.Hum,
@@ -144,9 +152,14 @@ server.on('connection',function(socket){
 	    
 	    console.log(values);
 	    
+	    instance.save().then(()=>{
+            console.log("InfoSensor Saved ...")
+        }).catch((err)=>{
+            console.log("InfoSensor error ... " + err)
+        })
+	    
 	    io.sockets.emit('newData', JSON.stringify(values));
 	    
-//	    lastData.time = (new Date()).Time*1000;
     });
 
 
@@ -157,45 +170,3 @@ server.on('connection',function(socket){
     });
 	
 });
-
-//let lastData;
-
-//server.on('listening', function () {
-//	var address = server.address();
-//	console.log('UDP Server listening on ' + address.address + ":" + address.port);
-//});
-
-//server.on('message', async function (message, remote) {
-//	var data = JSON.parse(message.toString());
-
-//	if(!lastData)
-//		lastData = await Database.findOne().sort('-time');
-
-//	if(!lastData || lastData.time.getTime() < data.Time*1000){
-//		var instance = new Database({
-//			time: data.Time*1000,
-//			sensor: data.Sensor,
-//			tmp: data.Tmp,
-//			hum: data.Hum,
-//			lum: data.Lum
-//		});
-
-//		const values = {
-//			time: data.Time*1000,
-//			sensor: data.Sensor,
-//			tmp: data.Tmp,
-//			hum: data.Hum,
-//			lum: data.Lum
-//		}
-
-//		io.sockets.emit('newData', JSON.stringify(values));
-
-//		instance.save(function (err, okay) {
-//			if (err) return console.error(err);
-//		});
-
-//		lastData.time = data.Time*1000;
-//	}
-//});
-
-//server.bind(serverPORT, serverHOST);
