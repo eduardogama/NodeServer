@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Live Graphics</title>
+	<script src="http://localhost:8080/socket.io/socket.io.js"></script>
+	<style>
+	.chart
+	{
+		height:32.5vh;
+		min-width: 310px;
+	}
+	</style>
+</head>
+<body>
+	<script src="https://code.highcharts.com/stock/highstock.js"></script>
+	<script src="https://code.highcharts.com/stock/modules/exporting.js"></script>
+	<script src="https://code.highcharts.com/stock/modules/export-data.js"></script>
+	<script src="sand.js"></script>
+
+	<div id="Temperature" class="chart"></div>
+	<div id="Humidity" class="chart"></div>
+	<div id="Luminosity" class="chart"></div>
+	<!-- JavaScript -->
+	<script type="text/javascript">
+
+	let HighchartsOptions = Highcharts.setOptions({
+		chart: {
+			type: 'spline'
+		},
+
+		plotOptions: {
+			spline: {
+				lineWidth: 3,
+				states: {
+					hover: {
+						lineWidth: 4
+					}
+				},
+				marker: {
+					enabled: false
+				}
+			}
+		},
+
+		rangeSelector: {
+			buttons: [{
+				count: 15,
+				type: 'minute',
+				text: '15M'
+			}, {
+				count: 30,
+				type: 'minute',
+				text: '30M'
+			}, {
+				count: 1,
+				type: 'hour',
+				text: '1H'
+			}, {
+				count: 12,
+				type: 'hour',
+				text: '12H'
+			}, {
+				count: 1,
+				type: 'day',
+				text: '1D'
+			}, {
+				type: 'all',
+				text: 'All'
+			}],
+			inputEnabled: false,
+			selected: 5
+		},
+
+		legend: {
+			layout: 'vertical',
+			align: 'right',
+			verticalAlign: 'middle'
+		},
+
+		global: {
+			useUTC: false
+		},
+
+		tooltip: {
+			valueDecimals: 1,
+			shared: true
+		},
+		
+		navigator: {
+            enabled: false
+        },
+
+		exporting: {
+			enabled: true,
+			buttons: {
+				contextButton: {
+					menuItems: Highcharts.getOptions().exporting.buttons.contextButton.menuItems.filter(item => item !== 'openInCloud')
+				}
+			}
+		}
+	});
+
+	let indexMap = {};
+
+	// Create the chart
+	let temperatureChart = Highcharts.stockChart('Temperature', {
+		chart: {
+			events: {
+				load: function () {
+					LoadData();
+					let socket = io.connect('http://localhost:8080');
+					
+					socket.on('newData', function(message) {
+						data = JSON.parse(message);
+						const time = new Date(data.time);
+						const index = indexMap[data.sensor];
+						
+						
+						console.log(time.getTime())
+						console.log(data.tmp)
+						
+						if(data.tmp){
+							temperatureChart.series[index].addPoint([time.getTime(), data.tmp], true, true);
+						}
+					});
+				}
+			}
+		},
+		
+<!--        series: [{-->
+<!--            name: 'Random data',-->
+<!--            data: (function () {-->
+<!--                // generate an array of random data-->
+<!--                var data = [],-->
+<!--                    time = (new Date()).getTime(),-->
+<!--                    i;-->
+
+<!--                for (i = -999; i <= 0; i += 1) {-->
+<!--                    data.push([-->
+<!--                        time + i * 1000,-->
+<!--                        Math.round(Math.random() * 100)-->
+<!--                    ]);-->
+<!--                }-->
+<!--                return data;-->
+<!--            }())-->
+<!--        }],-->
+
+		legend: {
+			enabled: true
+		},
+
+		title: {
+			text: 'Temperature'
+		},
+
+		tooltip: {
+			valueSuffix: ' °C'
+		}
+		
+		
+	});
+	
+	// Create the chart
+<!--	let temperatureChart = Highcharts.stockChart('Temperature', {-->
+<!--        series: [{-->
+<!--            name: 'AAPL Stock Price',-->
+<!--            data: data,-->
+<!--            tooltip: {-->
+<!--                valueDecimals: 2-->
+<!--            }-->
+<!--        }],-->
+<!--        -->
+<!--		legend: {-->
+<!--			enabled: true-->
+<!--		},-->
+
+<!--		title: {-->
+<!--			text: 'Temperature'-->
+<!--		},-->
+
+<!--		tooltip: {-->
+<!--			valueSuffix: ' °C'-->
+<!--		}-->
+<!--		-->
+<!--	});-->
+	
+	function LoadData(){
+		var dataTmp = [];
+		var dataHum = [];
+		var dataLum = [];
+
+		var xhttp = new XMLHttpRequest();
+
+		xhttp.onreadystatechange = function() {
+		
+            if (this.readyState == 4 && this.status == 200) {
+				
+				console.log("this.readyState = " + this.readyState);
+    		    console.log("this.status = " + this.status);
+
+				let oldData = JSON.parse(this.responseText);
+                
+                console.log("oldData = " + oldData.length);                
+                				
+				for (var i = oldData.length - 1; i >= 0; i--) {
+					if (oldData[i].sensor){
+						const time = new Date(oldData[i].time);
+
+						if(indexMap[oldData[i].sensor] === undefined)
+							indexMap[oldData[i].sensor] = dataTmp.length;
+						const index = indexMap[oldData[i].sensor];
+						
+						if (!dataTmp[index])
+							dataTmp[index] = [];
+						if (!dataHum[index])
+							dataHum[index] = [];
+						if (!dataLum[index])
+							dataLum[index] = [];
+						if(oldData[i].tmp){
+							dataTmp[index].push([time.getTime(), oldData[i].tmp]);
+							dataHum[index].push([time.getTime(), oldData[i].hum]);
+							dataLum[index].push([time.getTime(), oldData[i].lum]);
+						}
+					}
+				}
+				
+				for (var i = 0; i < dataTmp.length; i++) {
+				
+					const index = findIndex(indexMap, i);
+					if (dataTmp[i].length > 0)
+						temperatureChart.addSeries({data: dataTmp[i], name: ('Sensor ' + index), showInNavigator: true });
+					if (dataHum[i].length > 0)
+						humidityChart.addSeries({data: dataHum[i], name: ('Sensor ' + index), showInNavigator: true});
+					if (dataLum[i].length > 0)
+						luminosityChart.addSeries({data: dataLum[i], name: ('Sensor ' + index), showInNavigator: true});
+				}
+			}
+		};
+
+		xhttp.open("GET", "/getSensors", true);
+		xhttp.send();
+	}
+
+	function findIndex(indexMap, index){
+		for(const i in indexMap)
+			if(indexMap[i] == index)
+				return i;
+		return null;
+	}
+
+	</script>
+
+</body>
+</html>
+
+
