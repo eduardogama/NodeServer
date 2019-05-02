@@ -1,12 +1,14 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const http = require('http');
+const fs = require("fs");
 const app = module.exports.app = express();
 
 
 // Porta e host: servidor TCP
 var serverPORT = 5000;
 var serverHOST = '0.0.0.0';
+
 
 // Var para o server TCP
 var net = require('net');
@@ -168,3 +170,24 @@ server.on('connection',function(socket){
     });
 	
 });
+
+
+// ---------- Enviar os dados de configuração para execução dos experimentos ---------- 
+function loadConfig(){
+
+	var content = fs.readFileSync("upload_files/package.json");	
+	var exp = JSON.parse(content);
+	
+	var client = new net.Socket();
+	
+	client.connect(1337, '127.0.0.1', function() {
+		
+		var message = exp;
+		client.write(message);
+		
+		client.destroy();
+	});
+	
+	return exp;
+}
+
