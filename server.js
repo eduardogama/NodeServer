@@ -175,7 +175,7 @@ server.on('connection',function(socket){
 // ---------- Enviar os dados de configuração para execução dos experimentos ---------- 
 function loadConfig(){
 
-	var content = fs.readFileSync("upload_files/package.json");	
+	var content = fs.readFileSync("upload_files/exp1.json");	
 	var exp = JSON.parse(content);
 	
 	var client = new net.Socket();

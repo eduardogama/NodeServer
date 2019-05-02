@@ -1,0 +1,11 @@
+{
+	"phytech" : "RoF",
+	"arch" : "Centralized",
+	"channel" : "Separated",
+	"fiber_length" : 450,
+	"periodicity" : 10,
+	"total_packets" : 1000,
+	"tot_iot_ufrgs" : 0,
+	"tot_iot_local" : 6,
+	"tot_iot_remote" : 2
+}
